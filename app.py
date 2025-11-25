@@ -1,29 +1,66 @@
+# app.py — CLEAN & MODULAR
+
 import streamlit as st
 
-from ui.layout import setup_page, render_topbar, render_sidebar
-from core.session_manager import restore_session, handle_logout
-from core.auth_flow import render_login_screen
-from ui.home_view import render_home
-from ui.admin_view import render_admin_console
+# 1. global UI
+from ui_module import apply_global_css
 
-def main():
-    setup_page()
+# 2. session + auth
+from session_module import restore_session, show_session_expiry_warning
+from auth_module import login_or_signup_screen
 
-    restore_session()
+# 3. sidebar
+from sidebar_module import render_sidebar
 
-    role = st.session_state.get("role", "guest")
+# 4. chat/story engine
+from chat_module import render_story_chat, render_saved_stories
 
-    if role == "guest":
-        render_login_screen()
-        return
+# 5. admin panel
+from admin_module import render_admin_panel
 
-    render_topbar(on_logout=handle_logout)
-    render_sidebar()
 
-    if role == "admin":
-        render_admin_console()
-    else:
-        render_home()
+# ---------------------
+# PAGE CONFIG
+# ---------------------
+st.set_page_config(page_title="Dharma Story Chat", page_icon="📚", layout="wide")
+apply_global_css()
 
-if __name__ == "__main__":
-    main()
+
+# ---------------------
+# RESTORE SESSION (if ?session=token)
+# ---------------------
+restore_session()
+
+
+# ---------------------
+# LOGIN SCREEN (if guest)
+# ---------------------
+if st.session_state.get("role", "guest") == "guest":
+    login_or_signup_screen()
+
+
+# ---------------------
+# SIDEBAR OPTIONS
+# ---------------------
+render_sidebar()
+
+
+# ---------------------
+# SESSION WARNING
+# ---------------------
+show_session_expiry_warning()
+
+
+# ---------------------
+# ROUTING (admin or user)
+# ---------------------
+role = st.session_state.get("role")
+
+if role == "admin":
+    render_admin_panel()
+else:
+    age_group = st.session_state.get("age_group")
+    render_story_chat(age_group)
+
+    if st.session_state.get("show_history_panel"):
+        render_saved_stories()
